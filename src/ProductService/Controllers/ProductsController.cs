@@ -20,6 +20,12 @@ public class ProductsController : ControllerBase
         return Ok(_products);
     }
 
+    [HttpGet("count")]
+    public ActionResult<int> GetProductCount()
+    {
+        return Ok(_products.Count);
+    }
+
     [HttpGet("{id}")]
     public ActionResult<Product> GetProduct(int id)
     {
