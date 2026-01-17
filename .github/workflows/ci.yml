@@ -12,6 +12,11 @@ on:
 env:
   DOTNET_VERSION: '8.0.x'
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
   detect-changes:
     name: Detect Changed Services
@@ -65,14 +70,14 @@ jobs:
         run: dotnet build src/ProductService/ProductService.Tests/ProductService.Tests.csproj --no-restore --configuration Release
 
       - name: Run tests
-        run: dotnet test src/ProductService/ProductService.Tests/ProductService.Tests.csproj --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=product-service-test-results.trx"
+        run: dotnet test src/ProductService/ProductService.Tests/ProductService.Tests.csproj --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=product-service-test-results.trx" --results-directory ./TestResults
 
       - name: Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
           files: |
-            **/product-service-test-results.trx
+            TestResults/**/*.trx
           check_name: 'ProductService Test Results'
 
   order-service:
@@ -99,14 +104,14 @@ jobs:
         run: dotnet build src/OrderService/OrderService.Tests/OrderService.Tests.csproj --no-restore --configuration Release
 
       - name: Run tests
-        run: dotnet test src/OrderService/OrderService.Tests/OrderService.Tests.csproj --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=order-service-test-results.trx"
+        run: dotnet test src/OrderService/OrderService.Tests/OrderService.Tests.csproj --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=order-service-test-results.trx" --results-directory ./TestResults
 
       - name: Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
           files: |
-            **/order-service-test-results.trx
+            TestResults/**/*.trx
           check_name: 'OrderService Test Results'
 
   notification-service:
@@ -133,14 +138,14 @@ jobs:
         run: dotnet build src/NotificationService/NotificationService.Tests/NotificationService.Tests.csproj --no-restore --configuration Release
 
       - name: Run tests
-        run: dotnet test src/NotificationService/NotificationService.Tests/NotificationService.Tests.csproj --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=notification-service-test-results.trx"
+        run: dotnet test src/NotificationService/NotificationService.Tests/NotificationService.Tests.csproj --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=notification-service-test-results.trx" --results-directory ./TestResults
 
       - name: Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
           files: |
-            **/notification-service-test-results.trx
+            TestResults/**/*.trx
           check_name: 'NotificationService Test Results'
 
   build-all:
