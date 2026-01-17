@@ -5,9 +5,39 @@ on:
     branches:
       - main
       - develop
+    paths:
+      - 'src/ProductService/**'
+      - 'src/OrderService/**'
+      - 'src/NotificationService/**'
+      - 'src/Shared/**'
+      - '.github/workflows/**'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'README.md'
+      - 'PROGRESS.md'
+      - 'POSTMAN_README.md'
+      - '.gitignore'
+      - 'Infrastructure-Azure-DotNet.postman_collection.json'
+      - 'Infrastructure-Azure-DotNet.postman_environment.json'
   pull_request:
     branches:
       - '*'
+    paths:
+      - 'src/ProductService/**'
+      - 'src/OrderService/**'
+      - 'src/NotificationService/**'
+      - 'src/Shared/**'
+      - '.github/workflows/**'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'README.md'
+      - 'PROGRESS.md'
+      - 'POSTMAN_README.md'
+      - '.gitignore'
+      - 'Infrastructure-Azure-DotNet.postman_collection.json'
+      - 'Infrastructure-Azure-DotNet.postman_environment.json'
 
 env:
   DOTNET_VERSION: '8.0.x'
@@ -50,6 +80,7 @@ jobs:
     name: ProductService
     runs-on: ubuntu-latest
     needs: detect-changes
+    # Only run if ProductService or Shared library changed
     if: needs.detect-changes.outputs.product-service == 'true' || needs.detect-changes.outputs.shared == 'true'
     strategy:
       matrix:
@@ -84,6 +115,7 @@ jobs:
     name: OrderService
     runs-on: ubuntu-latest
     needs: detect-changes
+    # Only run if OrderService or Shared library changed
     if: needs.detect-changes.outputs.order-service == 'true' || needs.detect-changes.outputs.shared == 'true'
     strategy:
       matrix:
@@ -118,6 +150,7 @@ jobs:
     name: NotificationService
     runs-on: ubuntu-latest
     needs: detect-changes
+    # Only run if NotificationService or Shared library changed
     if: needs.detect-changes.outputs.notification-service == 'true' || needs.detect-changes.outputs.shared == 'true'
     strategy:
       matrix:
