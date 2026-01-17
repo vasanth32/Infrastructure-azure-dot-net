@@ -1485,6 +1485,468 @@ strategy:
 
 ---
 
-**Last Updated:** 2026-01-16
+## Docker Implementation ✅
+
+### Status: Completed
+
+### What Was Created:
+
+1. **Dockerfiles for All Services:**
+   - `src/ProductService/Dockerfile` - Multi-stage Dockerfile
+   - `src/OrderService/Dockerfile` - Multi-stage Dockerfile
+   - `src/NotificationService/Dockerfile` - Multi-stage Dockerfile
+
+2. **.dockerignore Files:**
+   - `src/ProductService/.dockerignore`
+   - `src/OrderService/.dockerignore`
+   - `src/NotificationService/.dockerignore`
+
+3. **Docker Compose:**
+   - `docker-compose.yml` - Local development setup
+   - `DOCKER_README.md` - Comprehensive Docker guide
+
+### Dockerfile Features:
+
+#### Multi-Stage Build Pattern:
+- **Stage 1 (Build):**
+  - Uses `mcr.microsoft.com/dotnet/sdk:8.0`
+  - Copies `.csproj` and restores dependencies
+  - Builds and publishes application
+  - Outputs to `/app/publish`
+
+- **Stage 2 (Runtime):**
+  - Uses `mcr.microsoft.com/dotnet/aspnet:8.0` (smaller image)
+  - Installs curl for health checks
+  - Creates non-root user (`appuser`)
+  - Copies published files
+  - Configures environment
+  - Adds health check
+  - Runs as non-root user
+
+#### Service-Specific Configuration:
+
+| Service | Container Port | Host Port | Health Check |
+|---------|---------------|-----------|--------------|
+| ProductService | 8080 | 5000 | http://localhost:5000/health |
+| OrderService | 8081 | 5001 | http://localhost:5001/health |
+| NotificationService | 8082 | 5002 | http://localhost:5002/health |
+
+#### Security Features:
+- Non-root user execution
+- Minimal runtime image
+- Proper file ownership
+- No unnecessary tools in production image
+
+#### Health Checks:
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:PORT/health || exit 1
+```
+
+### Docker Compose Configuration:
+
+**Services:**
+- ProductService: Port 5000:8080
+- OrderService: Port 5001:8081
+- NotificationService: Port 5002:8082
+
+**Features:**
+- Builds from Dockerfiles
+- Health checks configured
+- Restart policy: `unless-stopped`
+- Bridge network for service communication
+- Development environment variables
+
+### How to Use:
+
+#### Build Individual Service:
+```bash
+cd src/ProductService
+docker build -t productservice:latest .
+```
+
+#### Run with Docker Compose:
+```bash
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+```
+
+#### Test Services:
+```bash
+# Health checks
+curl http://localhost:5000/health  # ProductService
+curl http://localhost:5001/health  # OrderService
+curl http://localhost:5002/health  # NotificationService
+
+# API endpoints
+curl http://localhost:5000/api/products
+curl http://localhost:5001/api/orders
+curl http://localhost:5002/api/notifications
+```
+
+### .dockerignore Benefits:
+
+Excludes from build context:
+- Build outputs (bin/, obj/)
+- Test projects
+- IDE files
+- Documentation
+- Git files
+- Environment files
+- Reduces build context size significantly
+
+### Docker Best Practices Implemented:
+
+1. **Multi-stage builds** - Smaller final images
+2. **Non-root user** - Better security
+3. **Health checks** - Container orchestration support
+4. **Layer caching** - Copy .csproj first for better caching
+5. **Minimal runtime** - Uses aspnet image (not SDK)
+6. **Proper .dockerignore** - Faster builds
+
+---
+
+## Important Interview Questions & Answers - Docker
+
+### 26. What is Docker and why use it?
+
+**Answer:**
+Docker is a platform for developing, shipping, and running applications using containerization.
+
+**Benefits:**
+- **Consistency:** Same environment across dev, test, production
+- **Isolation:** Applications run in isolated containers
+- **Portability:** Run anywhere Docker is installed
+- **Efficiency:** Lightweight compared to VMs
+- **Scalability:** Easy to scale containers
+
+**Key Concepts:**
+- **Image:** Template for creating containers
+- **Container:** Running instance of an image
+- **Dockerfile:** Instructions for building images
+- **Docker Compose:** Tool for multi-container applications
+
+---
+
+### 27. What is a Multi-Stage Docker Build?
+
+**Answer:**
+Multi-stage builds allow you to use multiple FROM statements in a Dockerfile, creating intermediate images and copying artifacts between stages.
+
+**Benefits:**
+- **Smaller final image:** Only include runtime dependencies
+- **Better security:** No build tools in production image
+- **Faster deployments:** Smaller images = faster pulls
+
+**Example:**
+```dockerfile
+# Stage 1: Build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY . .
+RUN dotnet publish -c Release -o /app/publish
+
+# Stage 2: Runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+WORKDIR /app
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "MyApp.dll"]
+```
+
+**Size Comparison:**
+- SDK image: ~800MB
+- ASP.NET runtime: ~200MB
+- Final image: Only runtime (~200MB)
+
+---
+
+### 28. Why run containers as non-root user?
+
+**Answer:**
+Running containers as non-root user is a security best practice.
+
+**Risks of root user:**
+- If container is compromised, attacker has root access
+- Can modify system files
+- Security vulnerabilities are more severe
+
+**Benefits of non-root:**
+- Limited permissions if compromised
+- Follows principle of least privilege
+- Required by many container orchestration platforms
+
+**Implementation:**
+```dockerfile
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Change ownership
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+```
+
+---
+
+### 29. What is Docker Compose?
+
+**Answer:**
+Docker Compose is a tool for defining and running multi-container Docker applications.
+
+**Features:**
+- Define services in YAML file
+- Start/stop all services with one command
+- Configure networking between services
+- Manage volumes and environment variables
+
+**Use Cases:**
+- Local development
+- Testing environments
+- CI/CD pipelines
+- Simple production deployments
+
+**Example:**
+```yaml
+services:
+  web:
+    build: .
+    ports:
+      - "5000:80"
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: password
+```
+
+**Commands:**
+- `docker-compose up` - Start services
+- `docker-compose down` - Stop services
+- `docker-compose logs` - View logs
+- `docker-compose ps` - List services
+
+---
+
+### 30. What are Docker Health Checks?
+
+**Answer:**
+Health checks allow Docker to determine if a container is healthy and functioning correctly.
+
+**Configuration:**
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
+```
+
+**Parameters:**
+- `--interval`: Time between checks (default: 30s)
+- `--timeout`: Time to wait for response (default: 30s)
+- `--start-period`: Grace period before checks start (default: 0s)
+- `--retries`: Consecutive failures before unhealthy (default: 3)
+
+**Health States:**
+- `starting`: Initial grace period
+- `healthy`: Health check passed
+- `unhealthy`: Health check failed
+
+**Use Cases:**
+- Container orchestration (Kubernetes, Docker Swarm)
+- Load balancer health monitoring
+- Automatic container restart
+- Service discovery
+
+---
+
+### 31. What is .dockerignore and why use it?
+
+**Answer:**
+`.dockerignore` is a file that specifies which files and directories should be excluded from the Docker build context.
+
+**Benefits:**
+- **Faster builds:** Smaller build context
+- **Smaller images:** Excludes unnecessary files
+- **Security:** Prevents sensitive files in images
+- **Efficiency:** Reduces upload time to Docker daemon
+
+**Common Exclusions:**
+- Build outputs (bin/, obj/)
+- Test projects
+- IDE files
+- Documentation
+- Git files
+- Environment files
+
+**Example:**
+```
+bin/
+obj/
+*.Tests/
+.vs/
+.git/
+*.md
+```
+
+---
+
+### 32. What is the difference between Docker Image and Container?
+
+**Answer:**
+
+| Aspect | Image | Container |
+|--------|-------|-----------|
+| **Definition** | Template/Blueprint | Running instance |
+| **State** | Immutable, read-only | Mutable, read-write |
+| **Creation** | Built from Dockerfile | Created from image |
+| **Storage** | Stored in registry | Ephemeral (unless persisted) |
+| **Layers** | Multiple layers | Uses image layers + writable layer |
+
+**Analogy:**
+- **Image** = Class (template)
+- **Container** = Object (instance)
+
+**Lifecycle:**
+1. Build image from Dockerfile
+2. Create container from image
+3. Start container
+4. Container runs and can be stopped/removed
+5. Image remains (can create more containers)
+
+---
+
+### 33. How do you optimize Docker images?
+
+**Answer:**
+
+**1. Multi-stage builds:**
+- Use SDK for building, runtime for production
+- Reduces final image size significantly
+
+**2. Layer caching:**
+```dockerfile
+# Copy dependencies first (changes less frequently)
+COPY ["*.csproj", "./"]
+RUN dotnet restore
+
+# Copy source code (changes frequently)
+COPY . .
+RUN dotnet build
+```
+
+**3. Use .dockerignore:**
+- Exclude unnecessary files
+- Smaller build context
+
+**4. Minimal base images:**
+- Use `aspnet` instead of `sdk` for runtime
+- Use Alpine Linux variants when possible
+
+**5. Combine RUN commands:**
+```dockerfile
+# Bad
+RUN apt-get update
+RUN apt-get install -y curl
+RUN rm -rf /var/lib/apt/lists/*
+
+# Good
+RUN apt-get update && \
+    apt-get install -y curl && \
+    rm -rf /var/lib/apt/lists/*
+```
+
+**6. Remove unnecessary packages:**
+- Clean up package managers
+- Remove build tools from runtime
+
+---
+
+### 34. What is Docker Networking?
+
+**Answer:**
+Docker provides networking capabilities to connect containers.
+
+**Network Types:**
+
+1. **Bridge (default):**
+   - Containers on same network can communicate
+   - Isolated from host network
+   - Used by Docker Compose
+
+2. **Host:**
+   - Container uses host's network directly
+   - No network isolation
+   - Better performance
+
+3. **None:**
+   - No networking
+   - Complete isolation
+
+4. **Overlay:**
+   - Multi-host networking
+   - Used in Docker Swarm
+
+**Docker Compose Networking:**
+```yaml
+services:
+  service1:
+    networks:
+      - mynetwork
+  service2:
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge
+```
+
+**Service Discovery:**
+- Containers can reach each other by service name
+- Example: `http://productservice:8080`
+
+---
+
+### 35. What are Docker Volumes?
+
+**Answer:**
+Volumes are the preferred way to persist data in Docker containers.
+
+**Types:**
+
+1. **Named Volumes:**
+   ```yaml
+   volumes:
+     - mydata:/app/data
+   ```
+
+2. **Bind Mounts:**
+   ```yaml
+   volumes:
+     - /host/path:/container/path
+   ```
+
+3. **Anonymous Volumes:**
+   - Created automatically
+   - Removed when container removed
+
+**Use Cases:**
+- Database data persistence
+- Configuration files
+- Log files
+- Shared data between containers
+
+**Best Practices:**
+- Use named volumes for data
+- Use bind mounts for development
+- Don't store data in container filesystem
+
+---
+
+**Last Updated:** 2026-01-17
 
 
