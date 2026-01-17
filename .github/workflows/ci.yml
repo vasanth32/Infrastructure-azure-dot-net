@@ -1,0 +1,175 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - '*'
+
+env:
+  DOTNET_VERSION: '8.0.x'
+
+jobs:
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      product-service: ${{ steps.filter.outputs.product-service }}
+      order-service: ${{ steps.filter.outputs.order-service }}
+      notification-service: ${{ steps.filter.outputs.notification-service }}
+      shared: ${{ steps.filter.outputs.shared }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed services
+        uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            product-service:
+              - 'src/ProductService/**'
+            order-service:
+              - 'src/OrderService/**'
+            notification-service:
+              - 'src/NotificationService/**'
+            shared:
+              - 'src/Shared/**'
+
+  product-service:
+    name: ProductService
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.product-service == 'true' || needs.detect-changes.outputs.shared == 'true'
+    strategy:
+      matrix:
+        dotnet-version: ['8.0.x']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: Restore dependencies
+        run: dotnet restore src/ProductService/ProductService.Tests/ProductService.Tests.csproj
+
+      - name: Build
+        run: dotnet build src/ProductService/ProductService.Tests/ProductService.Tests.csproj --no-restore --configuration Release
+
+      - name: Run tests
+        run: dotnet test src/ProductService/ProductService.Tests/ProductService.Tests.csproj --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=product-service-test-results.trx"
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            **/product-service-test-results.trx
+          check_name: 'ProductService Test Results'
+
+  order-service:
+    name: OrderService
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.order-service == 'true' || needs.detect-changes.outputs.shared == 'true'
+    strategy:
+      matrix:
+        dotnet-version: ['8.0.x']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: Restore dependencies
+        run: dotnet restore src/OrderService/OrderService.Tests/OrderService.Tests.csproj
+
+      - name: Build
+        run: dotnet build src/OrderService/OrderService.Tests/OrderService.Tests.csproj --no-restore --configuration Release
+
+      - name: Run tests
+        run: dotnet test src/OrderService/OrderService.Tests/OrderService.Tests.csproj --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=order-service-test-results.trx"
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            **/order-service-test-results.trx
+          check_name: 'OrderService Test Results'
+
+  notification-service:
+    name: NotificationService
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.notification-service == 'true' || needs.detect-changes.outputs.shared == 'true'
+    strategy:
+      matrix:
+        dotnet-version: ['8.0.x']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: Restore dependencies
+        run: dotnet restore src/NotificationService/NotificationService.Tests/NotificationService.Tests.csproj
+
+      - name: Build
+        run: dotnet build src/NotificationService/NotificationService.Tests/NotificationService.Tests.csproj --no-restore --configuration Release
+
+      - name: Run tests
+        run: dotnet test src/NotificationService/NotificationService.Tests/NotificationService.Tests.csproj --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=notification-service-test-results.trx"
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            **/notification-service-test-results.trx
+          check_name: 'NotificationService Test Results'
+
+  build-all:
+    name: Build All Services
+    runs-on: ubuntu-latest
+    needs: [product-service, order-service, notification-service]
+    if: always() && (needs.product-service.result != 'skipped' || needs.order-service.result != 'skipped' || needs.notification-service.result != 'skipped')
+    strategy:
+      matrix:
+        dotnet-version: ['8.0.x']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: Restore dependencies
+        run: dotnet restore InfrastructureAzureDotNet.sln
+
+      - name: Build solution
+        run: dotnet build InfrastructureAzureDotNet.sln --no-restore --configuration Release
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- ProductService: ${{ needs.product-service.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- OrderService: ${{ needs.order-service.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- NotificationService: ${{ needs.notification-service.result }}" >> $GITHUB_STEP_SUMMARY

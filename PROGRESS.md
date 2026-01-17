@@ -1322,6 +1322,169 @@ public async Task GetProductAsync_InvalidId_ThrowsNotFoundException()
 
 ---
 
+## GitHub Actions CI/CD Workflow ✅
+
+### Status: Completed
+
+### What Was Created:
+1. **CI/CD Workflow File:** `.github/workflows/ci.yml`
+   - Automated testing and building for all services
+   - Smart change detection
+   - Parallel job execution
+
+2. **Workflow Features:**
+   - **Triggers:**
+     - Push events to `main` and `develop` branches
+     - Pull request events targeting any branch
+   
+   - **Change Detection:**
+     - Detects which services changed using path filters
+     - Only runs jobs for changed services
+     - Also runs if Shared library changes
+   
+   - **Service Jobs:**
+     - ProductService: restore, build, test
+     - OrderService: restore, build, test
+     - NotificationService: restore, build, test
+   
+   - **Matrix Strategy:**
+     - Uses .NET 8.0.x (configurable)
+     - Easy to add more .NET versions
+   
+   - **Test Results:**
+     - Publishes test results as GitHub checks
+     - Shows test summary in PR
+     - Uses TRX format for test results
+
+3. **Workflow Structure:**
+   ```
+   detect-changes (Job 1)
+   ├── Detects which services changed
+   └── Outputs flags for each service
+   
+   product-service (Job 2) - Conditional
+   ├── Setup .NET
+   ├── Restore dependencies
+   ├── Build
+   ├── Run tests
+   └── Publish test results
+   
+   order-service (Job 3) - Conditional
+   ├── Setup .NET
+   ├── Restore dependencies
+   ├── Build
+   ├── Run tests
+   └── Publish test results
+   
+   notification-service (Job 4) - Conditional
+   ├── Setup .NET
+   ├── Restore dependencies
+   ├── Build
+   ├── Run tests
+   └── Publish test results
+   
+   build-all (Job 5) - Summary
+   ├── Builds entire solution
+   └── Creates summary
+   ```
+
+### How It Works:
+
+1. **Change Detection:**
+   - Uses `dorny/paths-filter@v2` action
+   - Monitors paths:
+     - `src/ProductService/**` → ProductService job
+     - `src/OrderService/**` → OrderService job
+     - `src/NotificationService/**` → NotificationService job
+     - `src/Shared/**` → All service jobs (since Shared is used by all)
+
+2. **Conditional Execution:**
+   - Each service job only runs if:
+     - Its own path changed, OR
+     - Shared library changed
+   - Saves CI time by skipping unchanged services
+
+3. **Test Results Publishing:**
+   - Test results appear as GitHub checks
+   - Visible in pull requests
+   - Shows pass/fail status
+
+### Workflow File Location:
+```
+.github/workflows/ci.yml
+```
+
+### Example Scenarios:
+
+**Scenario 1: Change only ProductService**
+- Only ProductService job runs
+- OrderService and NotificationService jobs are skipped
+
+**Scenario 2: Change Shared library**
+- All three service jobs run (since all depend on Shared)
+
+**Scenario 3: Change multiple services**
+- Only changed service jobs run
+
+**Scenario 4: Pull Request**
+- Same logic applies
+- Test results visible in PR
+
+### Workflow Triggers:
+
+```yaml
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - '*'
+```
+
+### Matrix Strategy:
+
+Currently configured for .NET 8.0.x:
+```yaml
+strategy:
+  matrix:
+    dotnet-version: ['8.0.x']
+```
+
+To add more versions:
+```yaml
+strategy:
+  matrix:
+    dotnet-version: ['7.0.x', '8.0.x']
+```
+
+### Viewing Results:
+
+1. **GitHub Actions Tab:**
+   - Go to repository → Actions tab
+   - See all workflow runs
+   - Click on a run to see details
+
+2. **Pull Request:**
+   - Test results appear as checks
+   - Green checkmark = all tests passed
+   - Red X = tests failed
+
+3. **Workflow Summary:**
+   - Build summary shows which services were tested
+   - Test results show pass/fail counts
+
+### Benefits:
+
+- **Efficiency:** Only tests changed services
+- **Speed:** Parallel job execution
+- **Visibility:** Test results in PRs
+- **Reliability:** Automated testing on every push/PR
+- **Scalability:** Easy to add more services
+
+---
+
 **Last Updated:** 2026-01-16
 
 
