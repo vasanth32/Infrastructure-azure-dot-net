@@ -11,15 +11,6 @@ on:
       - 'src/NotificationService/**'
       - 'src/Shared/**'
       - '.github/workflows/**'
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'README.md'
-      - 'PROGRESS.md'
-      - 'POSTMAN_README.md'
-      - '.gitignore'
-      - 'Infrastructure-Azure-DotNet.postman_collection.json'
-      - 'Infrastructure-Azure-DotNet.postman_environment.json'
   pull_request:
     branches:
       - '*'
@@ -29,15 +20,6 @@ on:
       - 'src/NotificationService/**'
       - 'src/Shared/**'
       - '.github/workflows/**'
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'README.md'
-      - 'PROGRESS.md'
-      - 'POSTMAN_README.md'
-      - '.gitignore'
-      - 'Infrastructure-Azure-DotNet.postman_collection.json'
-      - 'Infrastructure-Azure-DotNet.postman_environment.json'
 
 env:
   DOTNET_VERSION: '8.0.x'
