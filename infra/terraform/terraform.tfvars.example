@@ -1,0 +1,26 @@
+# Copy this file to terraform.tfvars and update with your values
+# terraform.tfvars is in .gitignore and should not be committed
+
+location            = "eastus"
+environment         = "dev"
+resource_group_name = "rg-microservices-poc"  # Optional: specify existing resource group name
+acr_name            = "acrmicroservicespoc"
+aks_cluster_name    = "aks-microservices-poc"
+
+# Database Configuration
+database_type       = "sql"  # Options: "sql" or "postgresql"
+sql_admin_login     = "sqladmin"
+sql_admin_password  = "YourSecurePassword123!"  # ⚠️ CHANGE THIS - Must be at least 8 characters with uppercase, lowercase, numbers, and special characters
+
+# PostgreSQL Configuration (if database_type = "postgresql")
+postgres_admin_login     = "postgresadmin"
+postgres_admin_password  = "YourSecurePassword123!"  # ⚠️ CHANGE THIS - Must be at least 8 characters with uppercase, lowercase, numbers, and special characters
+
+# AKS Configuration
+aks_subnet_id = null  # null = AKS will create its own VNet. For production, create VNet/subnet first.
+
+# Optional: Service Principal credentials (if not using Azure CLI)
+# subscription_id = "your-subscription-id"
+# client_id       = "your-client-id"
+# client_secret   = "your-client-secret"
+# tenant_id       = "your-tenant-id"
